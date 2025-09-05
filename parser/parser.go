@@ -25,20 +25,17 @@ type ProblemResult struct {
 }
 
 type Service struct {
-	doc         *goquery.Document
 	contestants []Contestant
 	stats       map[string]string
 }
 
-func NewSerive(doc *goquery.Document) *Service {
-	return &Service{
-		doc: doc,
-	}
+func NewSerive() *Service {
+	return &Service{}
 }
 
-func (s *Service) ParseContestData() {
+func (s *Service) ParseContestData(doc *goquery.Document) {
 	var contestants []Contestant
-	s.doc.Find(".standings tr[participantId]").Each(func(i int, s *goquery.Selection) {
+	doc.Find(".standings tr[participantId]").Each(func(i int, s *goquery.Selection) {
 		contestant := Contestant{}
 
 		rankText := strings.TrimSpace(s.Find("td:first-child").Text())
@@ -113,7 +110,7 @@ func (s *Service) ParseContestData() {
 	s.contestants = contestants
 
 	stats := make(map[string]string)
-	s.doc.Find(".standingsStatisticsRow td.smaller").Each(func(i int, s *goquery.Selection) {
+	doc.Find(".standingsStatisticsRow td.smaller").Each(func(i int, s *goquery.Selection) {
 		if i > 0 {
 			accepted := s.Find(".cell-passed-system-test").Text()
 			tried := s.Find(".notice").Text()

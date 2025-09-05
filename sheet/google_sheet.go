@@ -12,22 +12,24 @@ import (
 const ContestProblemCount = 5
 
 type Service struct {
-	sheetSvc *sheets.Service
+	sheetSvc      *sheets.Service
+	spreadSheetID string
 }
 
-func NewService() (*Service, error) {
+func NewService(spreadSheetID string) (*Service, error) {
 	srv, err := sheets.NewService(context.TODO(), option.WithCredentialsFile("credentials.json"), option.WithScopes(sheets.SpreadsheetsScope))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Service{
-		sheetSvc: srv,
+		sheetSvc:      srv,
+		spreadSheetID: spreadSheetID,
 	}, nil
 }
 
-func (s *Service) CreateSheetIfNotExists(sheetName string, spreadSheetID string) error {
-	resp, err := s.sheetSvc.Spreadsheets.Get(spreadSheetID).Do()
+func (s *Service) CreateSheetIfNotExists(sheetName string) error {
+	resp, err := s.sheetSvc.Spreadsheets.Get(s.spreadSheetID).Do()
 	if err != nil {
 		return err
 	}
@@ -51,11 +53,11 @@ func (s *Service) CreateSheetIfNotExists(sheetName string, spreadSheetID string)
 		},
 	}
 
-	_, err = s.sheetSvc.Spreadsheets.BatchUpdate(spreadSheetID, req).Do()
+	_, err = s.sheetSvc.Spreadsheets.BatchUpdate(s.spreadSheetID, req).Do()
 	return err
 }
 
-func (s *Service) WriteContestData(sheetName, spreadSheetID string, contestants []parser.Contestant, stats map[string]string) error {
+func (s *Service) WriteContestData(sheetName string, contestants []parser.Contestant, stats map[string]string) error {
 	var values [][]interface{}
 	headers := []interface{}{"Rank", "Name", "Solved", "Completion rate"}
 	values = append(values, headers)
@@ -68,7 +70,7 @@ func (s *Service) WriteContestData(sheetName, spreadSheetID string, contestants 
 
 	// append data to sheet
 	writeRange := sheetName + "!A1"
-	_, err := s.sheetSvc.Spreadsheets.Values.Append(spreadSheetID, writeRange, &sheets.ValueRange{
+	_, err := s.sheetSvc.Spreadsheets.Values.Append(s.spreadSheetID, writeRange, &sheets.ValueRange{
 		Values: values,
 	}).ValueInputOption("RAW").Do()
 	if err != nil {
@@ -84,7 +86,7 @@ func (s *Service) WriteContestData(sheetName, spreadSheetID string, contestants 
 	}
 
 	statRange := fmt.Sprintf("%s!A%d", sheetName, statStartRow)
-	_, err = s.sheetSvc.Spreadsheets.Values.Update(spreadSheetID, statRange, &sheets.ValueRange{
+	_, err = s.sheetSvc.Spreadsheets.Values.Update(s.spreadSheetID, statRange, &sheets.ValueRange{
 		Values: statValues,
 	}).ValueInputOption("RAW").Do()
 
